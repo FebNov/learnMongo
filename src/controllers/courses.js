@@ -1,4 +1,5 @@
 const Course = require("../models/course");
+const Student = require("../models/student");
 
 async function addCourse(req, res) {
   const { name, code, description } = res.body;

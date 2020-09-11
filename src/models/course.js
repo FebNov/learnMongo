@@ -13,7 +13,8 @@ const schema = new mongoose.Schema({
   description: {
     type: String,
     default: 'This is default information'
-  }
+  },
+  students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
 });
 
 const Model = mongoose.model('Course', schema);
