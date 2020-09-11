@@ -6,35 +6,38 @@ async function addStudent(req, res) {
   await student.save();
   return res.status(201).json(student);
 }
+
 async function getStudent(req, res) {
-  const { id: code } = req.params;
-  const student = await Student.findById(code);
+  const { id } = req.params;
+  const student = await Student.findById(id).exec();
   if (!student) {
     return res.status(404).json("student Not Found");
   }
   return res.json(student);
 }
+
 async function getAllStudent(req, res) {
   const student = await Student.find().exec();
   return res.json(student);
 }
+
 async function updateStudent(req, res) {
-  const { id: code } = req.params;
+  const { id } = req.params;
   const { lastname, firstname } = req.body;
   const student = await Student.findByIdUpdate(
-    code,
+    id,
     { lastname, firstname },
     { new: true }
-  );
+  ).exec();
   if (!student) {
     return res.status(404).json("Student Not Found");
   }
   await student.save();
-  return res.json(Student);
+  return res.json(student);
 }
 async function deleteStudent(req, res) {
-  const { id: code } = req.params;
-  const student = await Student.findByIdAndDelete(code);
+  const { id } = req.params;
+  const student = await Student.findByIdAndDelete(id).exec();
   if (!student) {
     return res.status(404).json("Student Not Found");
   }

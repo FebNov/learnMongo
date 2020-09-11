@@ -6,14 +6,16 @@ async function addCourse(req, res) {
   await course.save();
   return res.status(201).json(course);
 }
+
 async function getCourse(req, res) {
   const { id: code } = req.params;
-  const course = await Course.findById(code);
+  const course = await Course.findById(code).exec();
   if (!course) {
     return res.status(404).json("course Not Found");
   }
   return res.json(course);
 }
+
 async function getAllCourse(req, res) {
   const courses = await Course.find().exec();
   return res.json(courses);
@@ -26,7 +28,7 @@ async function updateCourse(req, res) {
     code,
     { name, description },
     { new: true }
-  );
+  ).exec();
   if (!course) {
     return res.status(404).json("course Not Found");
   }
@@ -35,7 +37,7 @@ async function updateCourse(req, res) {
 }
 async function deleteCourse(req, res) {
   const { id: code } = req.params;
-  const course = await Course.findByIdAndDelete(code);
+  const course = await Course.findByIdAndDelete(code).exec();
   if (!course) {
     return res.status(404).json("course Not Found");
   }
