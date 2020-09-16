@@ -1,91 +1,117 @@
 const Student = require("../models/student");
 const Course = require("../models/course");
-const Joi = require("joi");
-const courses = require("./courses");
+
 async function addStudent(req, res) {
-  const { lastname, firstname } = res.body;
-  const schema = Joi.object({
-    lastname: Joi.string()
-      .required()
-      .regex(/^[a-zA-Z]$/)
-      .max(10),
-    firstname: Joi.string()
-      .required()
-      .regex(/^[a-zA-Z]$/)
-      .max(10),
+  const { firstName, lastName, email } = req.body;
+
+  const student = new Student({
+    firstName,
+    lastName,
+    email,
   });
-  schema.validateAsync(req.body);
-  const student = new Student({ lastname, firstname });
   await student.save();
-  return res.status(201).json(student);
+  return res.json(student);
 }
 
 async function getStudent(req, res) {
   const { id } = req.params;
-  const student = await Student.findById(id).exec();
+  const student = await Student.findById(id)
+    .populate("courses", "code name")
+    .exec();
   if (!student) {
-    return res.status(404).json("student Not Found");
+    return res.status(404).json("student not found");
   }
   return res.json(student);
 }
 
 async function getAllStudent(req, res) {
-  const student = await Student.find().exec();
-  return res.json(student);
+  const { page = 1, pageSize = 10, q = "", fields } = req.query;
+
+  const limit = Math.max(pageSize * 1, 10);
+  const skip = (Math.max(page * 1, 1) - 1) * limit;
+  const students = await Student.find().limit(limit).skip(skip).exec();
+
+  return res.json(students);
 }
 
 async function updateStudent(req, res) {
   const { id } = req.params;
-  const { lastname, firstname } = req.body;
-  const student = await Student.findByIdUpdate(
+  const { firstName, lastName, email } = req.body;
+  const newStudent = await Student.findByIdAndUpdate(
     id,
-    { lastname, firstname },
-    { new: true }
+    { firstName, lastName, email },
+    {
+      new: true,
+    }
   ).exec();
-  if (!student) {
-    return res.status(404).json("Student Not Found");
+  if (!newStudent) {
+    return res.status(404).json("course not found");
   }
-  await student.save();
-  return res.json(student);
+  return res.json(newStudent);
 }
+
 async function deleteStudent(req, res) {
   const { id } = req.params;
   const student = await Student.findByIdAndDelete(id).exec();
   if (!student) {
-    return res.status(404).json("Student Not Found");
+    return res.status(404).json("student not found");
   }
+
+  await Course.updateMany(
+    { _id: { $in: student.courses } },
+    {
+      $pull: {
+        students: student._id,
+      },
+    }
+  ).exec();
+
   return res.sendStatus(204);
 }
 
-async function addCourse(req, res) {}
-const { id, code } = req.params;
-const course = await Course.findById(code).exec();
-const student = await Student.findById(id).exec();
-if (!course || !student) {
-  return res.status(404).json("Not Exist");
+async function addCourse(req, res) {
+  // get student id, get course code
+  const { id, code } = req.params;
+  // find course
+  const course = await Course.findById(code).select("students").exec();
+  const student = await Student.findById(id).select("courses").exec();
+  // find student
+  // check student or course not exist
+  if (!student || !course) {
+    return res.status(404).json("student or course not found");
+  }
+  // add course to student
+  // the same student should not add the same course twice
+  student.courses.addToSet(course._id);
+
+  // add student to course
+  course.students.addToSet(student._id);
+
+  await student.save();
+  await course.save();
+
+  return res.json(student);
 }
-student.courses.addToSet(course._id);
-course.student.addToSet(student._id);
-await student.save();
-await course.save();
-return res.json(student);
 
 async function removeCourse(req, res) {
   const { id, code } = req.params;
-  const course = await Course.findById(code).exec();
-  const student = await Student.findById(id).exec();
-  if (!course || !student) {
-    return res.status(404).json("Not Exist");
-  }
-  student.courses.pull(course._id);
-  // if (student.course.map((i) => i.toString()).includes(course._id)){
 
-  // }
-  course.student.pull(student._id);
+  const course = await Course.findById(code).select("students").exec();
+  const student = await Student.findById(id).select("courses").exec();
+
+  if (!student || !course) {
+    return res.status(404).json("student or course not found");
+  }
+
+  student.courses.pull(course._id);
+
+  course.students.pull(student._id);
+
   await student.save();
   await course.save();
   return res.sendStatus(204);
 }
+
 module.exports = {
   addStudent,
   getStudent,

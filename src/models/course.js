@@ -1,22 +1,39 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const schema = new mongoose.Schema({
-  // course code
-  _id: {
-    type: String,
-    uppercase: true
+const schema = new mongoose.Schema(
+  {
+    // course code
+    _id: {
+      type: String,
+      uppercase: true,
+      alias: "code",
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      default: "This is default information",
+    },
+    students: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
+      select: false,
+    },
+    __v: {
+      type: Number,
+      select: false,
+    },
   },
-  name: {
-    type: String,
-    required: true
-  },
-  description: {
-    type: String,
-    default: 'This is default information'
-  },
-  students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
-});
+  {
+    toJSON: {
+      virtuals: true,
+    },
+    id: false,
+    timestamps: true,
+  }
+);
 
-const Model = mongoose.model('Course', schema);
+const Model = mongoose.model("Course", schema);
 
 module.exports = Model;
